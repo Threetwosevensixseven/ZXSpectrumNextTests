@@ -21,9 +21,9 @@ Start                   proc
                         call ClsAttr
                         call BootTestSetup              ; Setup ParaSys remote debugger
 
-                        NextRegEx($14, $E3)             ; Set global transparency to bright magenta
+                        nextreg $14, $E3                ; Set global transparency to bright magenta
                         PortOut($123B, $00)             ; Hide layer 2 and disable write paging
-                        NextRegEx($15, %0 00 001 1 0)   ; Disable sprites, over border, set LSU
+                        nextreg $15, %0 00 001 1 0      ; Disable sprites, over border, set LSU
 
 if enabled Standard
                         PageBankS(1, true)
@@ -124,24 +124,6 @@ PageBankN               macro(Bank, ReEnableInterrupts)
                         if (ReEnableInterrupts)
                           ei
                         endif
-mend
-
-NextReg                 macro(Register, Value)
-                        ld bc, Sprite_Register_Port
-                        ld a, Register
-                        out (c), a
-                        ld bc, Sprite_Value_Port
-                        ld a, Value
-                        out (c), a
-mend
-
-
-
-NextRegEx               macro(Register, Value)
-                        noflow
-                        db $ED, $91
-                        db Register, Value
-
 mend
 
 PortOut                 macro(Port, Value)

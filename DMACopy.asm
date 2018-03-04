@@ -8,7 +8,7 @@ Stack                   equ Start
 BootParaBase            equ $4000
 optionsize              12
 Mode                    optionlist 15, -15, "Mode","DMA Copy","DMA Fill","LDIR Copy","LDIR Fill"
-zeusprint Mode
+
                         org $8000
 Start                   proc
 ::s:
@@ -22,9 +22,9 @@ Start                   proc
                         call BootTestSetup
                         ei
 
-                        NextRegEx($14, $E3)             ; Set global transparency to bright magenta
+                        nextreg $14, $E3                ; Set global transparency to bright magenta
                         PortOut($123B, $00)             ; Hide layer 2 and disable write paging
-                        NextRegEx($15, %0 00 001 1 0)   ; Disable sprites, over border, set LSU
+                        nextreg $15, %0 00 001 1 0      ; Disable sprites, over border, set LSU
 
                         if Mode = 0 ; DMA Copy
 
@@ -90,13 +90,6 @@ Border                  macro(Colour)
                           ld a, Colour
                         endif
                         out (ULA_PORT), a
-mend
-
-NextRegEx               macro(Register, Value)
-                        noflow
-                        db $ED, $91
-                        db Register, Value
-
 mend
 
 PortOut                 macro(Port, Value)

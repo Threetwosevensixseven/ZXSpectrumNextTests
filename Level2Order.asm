@@ -25,42 +25,52 @@ s:                                                      ; Enables you to type cs
                         Border(0)                       ; Black
                         Fill($4000, $1800, $AA)         ; Fill ULA pixels with vertical stripes
                         Fill($5800, $1B00, $59)         ; Set ULA attrs to bright blue/magenta
-                        NextRegEx($14, $E3)             ; Set global transparency to bright magenta
+                        nextreg $14, $E3                ; Set global transparency to bright magenta
+                        nextreg $74, $00                ; Set transparency fallback to black
 
-                        NextRegEx($50, 24)              ; MMU page bottom 48K to layer 2
-                        NextRegEx($51, 25)
-                        NextRegEx($52, 26)
-                        NextRegEx($53, 27)
-                        NextRegEx($54, 28)
-                        NextRegEx($55, 29)
-                        NextRegEx($12, 28)              ; Set layer 2 page to 28
+                                                        ; Garry Lancaster: The default value for bright magenta
+                                                        ; in the ULA palette is actually $E7, not $E3. This was done
+                                                        ; to ensure existing Spectrum software doesn't display
+                                                        ; incorrectly (ie transparent where it shouldn't be)
+                                                        ; if using bright magenta.
+                        nextreg $43, $00                ; First palettes, autoincrement, edit ULA palette
+                        nextreg $40, $1B                ; Choose Bright magenta background index
+                        nextreg $41, $E3                ; Redefine to global transparency
+
+                        nextreg $50, 24                 ; MMU page bottom 48K to layer 2
+                        nextreg $51, 25
+                        nextreg $52, 26
+                        nextreg $53, 27
+                        nextreg $54, 28
+                        nextreg $55, 29
+                        nextreg $12, 28                 ; Set layer 2 page to 28
 
                         Fill($0000, $4000, $FC)         ; Fill layer 2 top    1/3rd with yellow      %111 111 00  $FC
                         Fill($4000, $4000, $E3)         ; Fill layer 2 middle 1/3rd with transparent %111 000 11  $E3
                         Fill($8000, $4000, $1C)         ; Fill layer 2 bottom 1/3rd with green       %000 111 00  $1C
 
                         PortOut($123B, $02)             ; Set layer 2 visible and disable write paging
-                        //NextRegEx($50, $FF)             ; MMU page ROM back into to $0000-1FFF
+                        //nextreg $50, $FF              ; MMU page ROM back into to $0000-1FFF
 
                         Value=(Order*4)+3
-                        NextRegEx($15, Value)           ; Enable sprites, over border, dynamic order
-;                       NextRegEx($15, %0 00 000 1 1)   ; Enable sprites, over border, set SLU
-;                       NextRegEx($15, %0 00 001 1 1)   ; Enable sprites, over border, set LSU
-;                       NextRegEx($15, %0 00 010 1 1)   ; Enable sprites, over border, set SUL
-;                       NextRegEx($15, %0 00 011 1 1)   ; Enable sprites, over border, set LUS
-;                       NextRegEx($15, %0 00 100 1 1)   ; Enable sprites, over border, set USL
-;                       NextRegEx($15, %0 00 101 1 1)   ; Enable sprites, over border, set ULS
+                        nextreg $15, Value              ; Enable sprites, over border, dynamic order
+;                       nextreg $15, %0 00 000 1 1      ; Enable sprites, over border, set SLU
+;                       nextreg $15, %0 00 001 1 1      ; Enable sprites, over border, set LSU
+;                       nextreg $15, %0 00 010 1 1      ; Enable sprites, over border, set SUL
+;                       nextreg $15, %0 00 011 1 1      ; Enable sprites, over border, set LUS
+;                       nextreg $15, %0 00 100 1 1      ; Enable sprites, over border, set USL
+;                       nextreg $15, %0 00 101 1 1      ; Enable sprites, over border, set ULS
 
                         SetSpritePattern(TestSprite, 0, 0) ; Set test sprite pattern
                         NextSprite(0, 32, 48, 0, false, false, false, true, 0) ; Y=48 is in the top 1/3rd
                         NextSprite(1, 32, 64, 0, false, false, false, true, 0) ; Y=64 is in the middle 1/3rd
 
-                        NextRegEx($50,255)              ; MMU page bottom 48K back
-                        NextRegEx($51,255)
-                        NextRegEx($52, 10)
-                        NextRegEx($53, 11)
-                        NextRegEx($54,  4)
-                        NextRegEx($55,  5)
+                        nextreg $50, 255                ; MMU page bottom 48K back
+                        nextreg $51, 255
+                        nextreg $52, 10
+                        nextreg $53, 11
+                        nextreg $54, 4
+                        nextreg $55, 5
                         ei
 ; Test code ends
 Loop:
@@ -85,22 +95,6 @@ TestSprite:
                         db  $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3;
                         db  $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3;
                         db  $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3, $E3;
-
-NextReg                 macro(Register, Value)
-                        ld bc, $243B
-                        ld a, Register
-                        out (c), a
-                        inc b
-                        ld a, Value
-                        out (c), a
-mend
-
-NextRegEx               macro(Register, Value)
-                        noflow
-                        db $ED, $91
-                        db Register, Value
-
-mend
 
 Border                  macro(Colour)
                         if Colour=0
