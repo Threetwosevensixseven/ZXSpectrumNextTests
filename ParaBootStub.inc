@@ -13,10 +13,6 @@ UART_mRX_DATA_READY     equ %xxxxx 0 0 1                ;
 UART_mTX_BUSY           equ %xxxxx 0 1 0                ;
 UART_mRX_FIFO_FULL      equ %xxxxx 1 0 0                ;
 
-; Baud rate divider values
-
-UART_b115200            equ 0                           ;
-
 ; Protocol characters
 
 cpcSTUFF                equ $A6                         ; PSSI protocol bytes
@@ -59,13 +55,37 @@ PSSI_CMDACK             equ $8A                         ;
 
 ; Call this once to set the UART up before we can use it
 
+if not enabled Cspect
+
 BootTestSetup           proc                            ;
 
-                        ld a,UART_b115200               ; Set the baud-rate
+                        ld bc,$243B                     ; Now adjust for the set Video timing.
+                        ld a,17                         ;
+                        out (c),a                       ;
+
+                        inc b                           ;
+                        in a,(c)                        ;
+
+                        ld hl,BaudTable                 ;
+                        add a,l                         ;
+                        ld l,a                          ;
+
+                        adc a,h                         ;
+                        sub l                           ;
+                        ld h,a                          ;
+
+                        ld a,(hl)                       ;
+
                         ld bc,UART_SetBaud              ;
+
+                        out(c),a                        ;
+
+                        ld a,%1 0000000                 ; Top bit set
                         out(c),a                        ;
 
                         ret                             ; Done
+
+BaudTable               db 14,14,15,15,16,16,17,14      ; 2000000
 
                         pend                            ;
 
@@ -118,7 +138,20 @@ BootWait                call BootRxD                    ; Get a char
                         call BootRxD                    ; Get the terminator byte
                         ld e,a                          ;
 
-BootPlantLp             call BootRxD                    ; Get the next byte
+BootPlantLp             ld a,high UART_GetStatus        ; Are there any characters waiting?
+                        in a,(low UART_GetStatus)       ; This inputs from the 16-bit address UART_GetStatus
+        if UART_mRX_DATA_READY = $01
+                        rrca                            ; Test bit zero
+                        jr nc BootPlantLp               ; Not ready yet
+        else
+                        and UART_mRX_DATA_READY         ; We're just interested in the DATA_READY flag
+                        jr z BootPlantLp                ; Nothing
+        endif
+                        ; Read it
+
+                        ld a,high UART_RxD              ; Read it
+                        in a,(low UART_RxD)             ;
+
                         ld (hl),a                       ; Store it
                         inc hl                          ;
 
@@ -158,4 +191,14 @@ BootTxDWait             in a,(c)                        ; Wait until it's sent
                         ret                             ; Done
 
                         pend                            ; And we're done
+
+else
+BootTestSetup:
+                        ret
+                        ds 36
+BootTest:
+                        ret
+                        ds 88
+
+endif
 
