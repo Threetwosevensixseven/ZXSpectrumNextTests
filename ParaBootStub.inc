@@ -55,11 +55,17 @@ PSSI_CMDACK             equ $8A                         ;
 
 ; Call this once to set the UART up before we can use it
 
-if not enabled Cspect
-
-BootTestSetup           proc                            ;
-
+BootTestSetup           proc                            ; ParaSys will hang indefinitely if UART_GetStatus has bit 0 set.
+                                                        ; For emulators that return 255 on unknown ports, disable Parasys.
+                        NextRegRead($00)                ; (R) 0x00 (00) => Machine ID
+                        cp 10                           ; Machine ID 10 = ZX Spectrum Next
+                        jp z, EnableParaSys             ; If a Next then set up UART
+                        ld a, $C9                       ; SMC> $C9 = ret
+                        ld (BootTest), a                ; Otherwise make Parasys call return immediately
+                        ret                             ; and do no further setup.
+EnableParaSys:
                         ld bc,$243B                     ; Now adjust for the set Video timing.
+                                                        ; Existing BootTestSetup code follows from here...
                         ld a,17                         ;
                         out (c),a                       ;
 
@@ -88,7 +94,7 @@ BootTestSetup           proc                            ;
 BaudTable               db 14,14,15,15,16,16,17,14      ; 2000000
 
                         pend                            ;
-
+//zeusprint $-BootTestSetup-1
 ; Call this periodically and it will "install" ParaSys when there is any comms activity
 
 BootTest                proc                            ; Hide all the labels
@@ -192,13 +198,11 @@ BootTxDWait             in a,(c)                        ; Wait until it's sent
 
                         pend                            ; And we're done
 
-else
-BootTestSetup:
-                        ret
-                        ds 36
-BootTest:
-                        ret
-                        ds 88
-
-endif
+NextRegRead             macro(Register)
+                        ld bc, Sprite_Register_Port
+                        ld a, Register
+                        out (c), a
+                        inc b
+                        in a, (c)
+mend
 

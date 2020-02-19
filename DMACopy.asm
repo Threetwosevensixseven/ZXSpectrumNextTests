@@ -1,6 +1,6 @@
 ; DMACopy.asm
 
-zeusemulate             "128K"
+zeusemulate             "Next"
 zoLogicOperatorsHighPri = false
 zoSupportStringEscapes  = false
 Zeus_PC                 = Start
@@ -8,6 +8,7 @@ Stack                   equ Start
 BootParaBase            equ $4000
 optionsize              12
 Mode                    optionlist 15, -15, "Mode","DMA Copy","DMA Fill","LDIR Copy","LDIR Fill"
+Cspect                  optionbool 155, -13, "Cspect", false
 
                         org $8000
 Start                   proc
@@ -19,7 +20,7 @@ Start                   proc
                         im 2
                         call Cls
                         call ClsAttr
-                        call BootTestSetup
+                        //call BootTestSetup
                         ei
 
                         nextreg $14, $E3                ; Set global transparency to bright magenta
@@ -51,7 +52,7 @@ Start                   proc
                         endif
 Loop:
                         halt
-                        call BootTest
+                        //call BootTest
                         jp Loop
 pend
 
@@ -223,7 +224,7 @@ Cyan                    equ 5
 Yellow                  equ 6
 White                   equ 7
 
-include                 "ParaBootStub.inc"      ; Parasys remote debugger slave stub
+//include                 "ParaBootStub.inc"      ; Parasys remote debugger slave stub
 
 org $BE00                                       ; Have an IM 2 ISR at $BE00...
                         loop 257
@@ -236,10 +237,17 @@ org $BFBF
 org $C000
 import_bin              "Test.scr"              ; Test screen used as the source of the copy
 
-if zeusver < 72                                 ; Make sure we have the latest features ('don't care' x bits in binary literals)
-  zeuserror "Upgrade to Zeus v3.99 or above, available at http://www.desdes.com/products/oldfiles/zeus.htm."
+if zeusver < 74                                 ; Make sure we have the latest features ('don't care' x bits in binary literals)
+  zeuserror "Upgrade to ZeusTest v4.00 or above, available at http://www.desdes.com/products/oldfiles/zeus.htm."
 endif
 
-output_z80              "DMACopy.z80", $0000, Start
-output_para             Start, $FFFF-Start
+if Mode = 0 ; DMA Copy
+  output_nex "DMACopy.nex", $FF40, Start
+elseif Mode = 1 ; DMA Fill
+  output_nex "DMAFill.nex", $FF40, Start
+elseif Mode = 2 ; LDIR Copy
+  output_nex "LDIRCopy.nex", $FF40, Start
+elseif Mode = 3 ; LDIR Fill
+  output_nex "LDIRFill.nex", $FF40, Start
+endif
 

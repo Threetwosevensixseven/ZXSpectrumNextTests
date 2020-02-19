@@ -45,7 +45,7 @@ s:                                                      ; Enables you to type cs
                         nextreg $55, 29
                         nextreg $12, 28                 ; Set layer 2 page to 28
 
-                        Fill($0000, $4000, $FC)         ; Fill layer 2 top    1/3rd with yellow      %111 111 00  $FC
+                        Fill($0000, $4000, $C0)         ; Fill layer 2 top    1/3rd with yellow      %111 111 00  $FC
                         Fill($4000, $4000, $E3)         ; Fill layer 2 middle 1/3rd with transparent %111 000 11  $E3
                         Fill($8000, $4000, $1C)         ; Fill layer 2 bottom 1/3rd with green       %000 111 00  $1C
 
@@ -190,5 +190,7 @@ org $BFBF
                         reti
 
 output_z80 "Level2Order.z80", $0000, Start              ; Create a 128K snapshot
-output_para Begin, End-Begin                            ; Send this code to ParaSys
+output_sna "Level2Order.sna", $0000, Start              ; Create a 128K snapshot
+
+output_para Begin, End-Begin, Start                     ; Send this code to ParaSys
 
